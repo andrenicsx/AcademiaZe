@@ -37,8 +37,14 @@ namespace AcademiaDoZe.Presentation.AppMaui.Configuration
         private static (string ConnectionString, EAppDatabaseType DatabaseType) ReadDbPreferences()
         {
             // dados conexão
+            string dbServer = Preferences.Get("Servidor", ""); // "172.24.32.1"
+            string dbDatabase = Preferences.Get("Banco", ""); // "db_academia_do_ze"
+            string dbUser = Preferences.Get("Usuario", ""); // "sa"
+            string dbPassword = Preferences.Get("Senha", ""); // "abcBolinhas12345"
+            string dbComplemento = Preferences.Get("Complemento", ""); // "TrustServerCertificate=True;Encrypt=True;"
 
-            string connectionString = "Server=127.0.0.1;Port=3307;Database=db_academia_do_ze;User Id=root;Password=1234;";
+            // Configurações de conexão
+            string connectionString = $"Server={dbServer};Database={dbDatabase};User Id={dbUser};Password={dbPassword};{dbComplemento}";
 
             // obtém o tipo de banco de dados selecionado nas preferências
 
