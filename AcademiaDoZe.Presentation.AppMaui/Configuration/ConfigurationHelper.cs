@@ -44,7 +44,7 @@ namespace AcademiaDoZe.Presentation.AppMaui.Configuration
             string dbComplemento = Preferences.Get("Complemento", ""); // "TrustServerCertificate=True;Encrypt=True;"
 
             // Configurações de conexão
-            string connectionString = $"Server={dbServer};Database={dbDatabase};User Id={dbUser};Password={dbPassword};{dbComplemento}";
+            string connectionString = "Server=127.0.0.1;Port=3307;Database=db_academia_do_ze;User Id=root;Password=1234;";
 
             // obtém o tipo de banco de dados selecionado nas preferências
 
