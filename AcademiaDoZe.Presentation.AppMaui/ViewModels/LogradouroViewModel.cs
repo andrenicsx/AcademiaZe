@@ -127,6 +127,7 @@ namespace AcademiaDoZe.Presentation.AppMaui.ViewModels
                 IsBusy = false;
             }
         }
+
         [RelayCommand]
         private async Task SaveLogradouroAsync()
         {
