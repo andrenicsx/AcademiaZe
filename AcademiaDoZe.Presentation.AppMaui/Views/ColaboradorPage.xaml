@@ -146,7 +146,7 @@ Title="{Binding Title}">
                 <Button Grid.Column="1" Text="Salvar" Command="{Binding SaveColaboradorCommand}" Style="{StaticResource ButtonPrimary}" HeightRequest="50">
 
                     <Button.ImageSource>
-                        <FontImageSource FontFamily="MaterialIcons" Glyph="&#xe161;" />
+                        <FontImageSource FontFamily="MaterialIcons" Glyph="&#xe86c;" />
                     </Button.ImageSource>
                 </Button>
             </Grid>
