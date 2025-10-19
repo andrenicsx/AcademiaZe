@@ -49,7 +49,8 @@ Title="{Binding Title}">
                     </StackLayout>
                     <StackLayout Spacing="5">
                         <Label Text="Email"/>
-                        <Entry Text="{Binding Colaborador.Email}" Placeholder="Digite o email..." Keyboard="Email"/>
+                        <Entry x:Name="EmailEntry" Text="{Binding Colaborador.Email}" Placeholder="Digite o email..." Keyboard="Email" Unfocused="OnEmailUnfocused" />
+                        <Label x:Name="EmailErrorLabel" Text="Formato de e-mail inválido. Use nome@dominio.com" TextColor="Red" FontSize="12" IsVisible="False" />
                     </StackLayout>
                     <StackLayout Spacing="5">
                         <Label Text="Senha"/>
