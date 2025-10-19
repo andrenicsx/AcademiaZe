@@ -147,28 +147,46 @@ namespace AcademiaDoZe.Presentation.AppMaui.ViewModels
             try
             {
                 IsBusy = true;
-                var colaboradorData = await _colaboradorService.ObterPorCpfAsync(Colaborador.Cpf);
+                // normaliza para apenas dígitos (o repositório espera dígitos)
 
-                if (colaboradorData != null)
+                var cpfNormalized = new string(Colaborador.Cpf.Where(char.IsDigit).ToArray());
 
+                var resultados = (await _colaboradorService.ObterPorCpfAsync(cpfNormalized))?.ToList() ?? new List<ColaboradorDTO>();
+                if (!resultados.Any())
                 {
-                    Colaborador = colaboradorData;
+                    await Shell.Current.DisplayAlert("Aviso", "CPF não encontrado.", "OK"); return;
+                }
+                if (resultados.Count == 1)
+                {
+                    Colaborador = resultados.First();
                     IsEditMode = true;
-                    await Shell.Current.DisplayAlert("Aviso", "Colaborador já cadastrado! Dados carregados para edição.", "OK");
+                    await Shell.Current.DisplayAlert("Aviso", "Colaborador já cadastrado! Dados carregados para edição.", "OK"); return;
                 }
-                else
+                // múltiplos resultados -> perguntar ao usuário qual selecionar
+
+                var options = resultados.Select(c => $"{c.Id} - {c.Nome} ({c.Cpf})").ToArray();
+
+                var escolha = await Shell.Current.DisplayActionSheet("Vários colaboradores encontrados", "Cancelar", null, options);
+                if (string.IsNullOrWhiteSpace(escolha) || escolha == "Cancelar")
+                    return;
+                // extrai ID a partir da string selecionada ("{Id} - ...")
+                var idStr = escolha.Split('-', 2).FirstOrDefault()?.Trim();
+                if (int.TryParse(idStr, out var selId))
+
                 {
-                    await Shell.Current.DisplayAlert("Aviso", "CPF não encontrado.", "OK");
+                    var selecionado = resultados.FirstOrDefault(c => c.Id == selId);
+
+                    if (selecionado != null)
+
+                    {
+                        Colaborador = selecionado;
+                        IsEditMode = true;
+                        await Shell.Current.DisplayAlert("Aviso", "Colaborador selecionado: dados carregados para edição.", "OK");
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                await Shell.Current.DisplayAlert("Erro", $"Erro ao buscar CPF: {ex.Message}", "OK");
-            }
-            finally
-            {
-                IsBusy = false;
-            }
+            catch (Exception ex) { await Shell.Current.DisplayAlert("Erro", $"Erro ao buscar CPF: {ex.Message}", "OK"); }
+            finally { IsBusy = false; }
         }
 
         [RelayCommand]

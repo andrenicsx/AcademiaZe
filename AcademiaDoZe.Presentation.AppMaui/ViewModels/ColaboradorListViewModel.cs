@@ -104,11 +104,11 @@ namespace AcademiaDoZe.Presentation.AppMaui.ViewModels
                 }
                 else if (SelectedFilterType == "CPF")
                 {
-                    var colaborador = await _colaboradorService.ObterPorCpfAsync(SearchText);
+                    // ObterPorCpfAsync agora retorna IEnumerable<ColaboradorDTO>
 
-                    if (colaborador != null)
+                    var colaboradores = await _colaboradorService.ObterPorCpfAsync(SearchText) ?? Enumerable.Empty<ColaboradorDTO>();
 
-                        resultados = new[] { colaborador };
+                    resultados = colaboradores;
                 }
                 // Atualiza a coleção na thread principal
 

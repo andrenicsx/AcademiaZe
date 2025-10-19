@@ -91,15 +91,21 @@ public class ColaboradorService : IColaboradorService
         return true;
 
     }
-    public async Task<ColaboradorDTO> ObterPorCpfAsync(string cpf)
+    public async Task<IEnumerable<ColaboradorDTO>> ObterPorCpfAsync(string cpf)
     {
         if (string.IsNullOrWhiteSpace(cpf))
             throw new ArgumentException("CPF não pode ser vazio.", nameof(cpf));
-        cpf = new string([.. cpf.Where(char.IsDigit)]);
-        var colaborador = await _repoFactory().ObterPorCpf(cpf);
-        return (colaborador != null) ? colaborador.ToDto() : null!;
+        // mantém apenas dígitos - normaliza
+        cpf = new string(cpf.Where(char.IsDigit).ToArray());
+        // busca no repositório (já faz LIKE por prefixo)
 
+        var colaboradores = await _repoFactory().ObterPorCpf(cpf) ?? Enumerable.Empty<Domain.Entities.Colaborador>();
+
+        // mapeia para DTOs e retorna
+
+        return colaboradores.Select(c => c.ToDto());
     }
+
     public async Task<bool> CpfJaExisteAsync(string cpf, int? id = null)
     {
         return await _repoFactory().CpfJaExiste(cpf, id);
