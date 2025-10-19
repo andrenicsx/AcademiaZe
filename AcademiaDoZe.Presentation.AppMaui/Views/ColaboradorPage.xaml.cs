@@ -17,4 +17,13 @@ public partial class ColaboradorPage : ContentPage
             await viewModel.InitializeAsync();
         }
     }
+
+    private void OnShowPasswordToggled(object? sender, ToggledEventArgs e)
+    {
+        if (SenhaEntry is not null)
+        {
+            // Switch.IsToggled == true -> mostrar senha -> IsPassword = false
+            SenhaEntry.IsPassword = !e.Value;
+        }
+    }
 }
