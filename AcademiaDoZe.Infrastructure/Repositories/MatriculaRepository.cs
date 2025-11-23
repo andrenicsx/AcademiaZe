@@ -1,4 +1,5 @@
 ﻿// André Nícolas Granemann Coelho
+
 using AcademiaDoZe.Domain.Entities;
 using AcademiaDoZe.Domain.Enums;
 using AcademiaDoZe.Domain.Repositories;
@@ -11,7 +12,7 @@ namespace AcademiaDoZe.Infrastructure.Repositories;
 
 public class MatriculaRepository : BaseRepository<Matricula>, IMatriculaRepository
 {
-    public MatriculaRepository(string connectionString, DatabaseType databaseType) : base(connectionString, databaseType){ }
+    public MatriculaRepository(string connectionString, DatabaseType databaseType) : base(connectionString, databaseType) { }
     protected override async Task<Matricula> MapAsync(DbDataReader reader)
     {
         try
@@ -20,7 +21,7 @@ public class MatriculaRepository : BaseRepository<Matricula>, IMatriculaReposito
             var alunoId = Convert.ToInt32(reader["aluno_id"]);
             var alunoRepository = new AlunoRepository(_connectionString, _databaseType);
             var aluno = await alunoRepository.ObterPorId(alunoId)
-                        ?? throw new InvalidOperationException($"Aluno com ID {alunoId} não encontrado.");
+                            ?? throw new InvalidOperationException($"Aluno com ID {alunoId} não encontrado.");
 
             // Calcula idade do aluno
             var idade = DateTime.Today.Year - aluno.DataNascimento.Year;
@@ -69,14 +70,20 @@ public class MatriculaRepository : BaseRepository<Matricula>, IMatriculaReposito
             + "VALUES (@Aluno, @Colaborador, @Plano, @Data_inicio, @Data_fim, @Objetivo, @Restricoes_medicas, @Laudo_medico, @Observacoes_restricoes); "
             + "SELECT LAST_INSERT_ID();";
             await using var command = DbProvider.CreateCommand(query, connection);
-            command.Parameters.Add(DbProvider.CreateParameter("@Aluno", entity.AlunoMatricula.Id, DbType.String, _databaseType));
-            command.Parameters.Add(DbProvider.CreateParameter("@Colaborador", 1, DbType.String, _databaseType));
-            command.Parameters.Add(DbProvider.CreateParameter("@Plano", (int)entity.Plano, DbType.String, _databaseType));
+
+            // Correção de DbType para Int32 em IDs
+            command.Parameters.Add(DbProvider.CreateParameter("@Aluno", entity.AlunoMatricula.Id, DbType.Int32, _databaseType));
+            command.Parameters.Add(DbProvider.CreateParameter("@Colaborador", 1, DbType.Int32, _databaseType));
+
+            command.Parameters.Add(DbProvider.CreateParameter("@Plano", (int)entity.Plano, DbType.Int32, _databaseType));
             command.Parameters.Add(DbProvider.CreateParameter("@Data_inicio", entity.DataInicio.ToString("yyyy-MM-dd"), DbType.String, _databaseType));
             command.Parameters.Add(DbProvider.CreateParameter("@Data_fim", entity.DataFim.ToString("yyyy-MM-dd"), DbType.String, _databaseType));
             command.Parameters.Add(DbProvider.CreateParameter("@Objetivo", entity.Objetivo, DbType.String, _databaseType));
             command.Parameters.Add(DbProvider.CreateParameter("@Restricoes_medicas", (int)entity.RestricoesMedicas, DbType.Int32, _databaseType));
-            command.Parameters.Add(DbProvider.CreateParameter("@Laudo_medico", entity.LaudoMedico, DbType.String, _databaseType));
+
+            // Ajuste para Laudo Médico (para Binary)
+            command.Parameters.Add(DbProvider.CreateParameter("@Laudo_medico", (object)entity.LaudoMedico?.Conteudo ?? DBNull.Value, DbType.Binary, _databaseType));
+
             command.Parameters.Add(DbProvider.CreateParameter("@Observacoes_restricoes", (object)entity.ObservacoesRestricoes ?? DBNull.Value, DbType.String, _databaseType));
             var id = await command.ExecuteScalarAsync();
             if (id != null && id != DBNull.Value)
@@ -107,14 +114,26 @@ public class MatriculaRepository : BaseRepository<Matricula>, IMatriculaReposito
             + "obs_restricao = @Observacoes_restricoes "
             + "WHERE id_matricula = @Id";
             await using var command = DbProvider.CreateCommand(query, connection);
-            command.Parameters.Add(DbProvider.CreateParameter("@Aluno", entity.AlunoMatricula.Id, DbType.String, _databaseType));
-            command.Parameters.Add(DbProvider.CreateParameter("@Colaborador", 1, DbType.String, _databaseType));
-            command.Parameters.Add(DbProvider.CreateParameter("@Plano", (int)entity.Plano, DbType.String, _databaseType));
+
+            // Correção de DbType para Int32 em IDs
+            command.Parameters.Add(DbProvider.CreateParameter("@Aluno", entity.AlunoMatricula.Id, DbType.Int32, _databaseType));
+            command.Parameters.Add(DbProvider.CreateParameter("@Colaborador", 1, DbType.Int32, _databaseType));
+
+            command.Parameters.Add(DbProvider.CreateParameter("@Plano", (int)entity.Plano, DbType.Int32, _databaseType));
             command.Parameters.Add(DbProvider.CreateParameter("@Data_inicio", entity.DataInicio.ToString("yyyy-MM-dd"), DbType.String, _databaseType));
             command.Parameters.Add(DbProvider.CreateParameter("@Data_fim", entity.DataFim.ToString("yyyy-MM-dd"), DbType.String, _databaseType));
             command.Parameters.Add(DbProvider.CreateParameter("@Objetivo", entity.Objetivo, DbType.String, _databaseType));
             command.Parameters.Add(DbProvider.CreateParameter("@Restricoes_medicas", (int)entity.RestricoesMedicas, DbType.Int32, _databaseType));
-            command.Parameters.Add(DbProvider.CreateParameter("@Laudo_medico", entity.LaudoMedico, DbType.String, _databaseType));
+
+            // Ajuste para Laudo Médico
+            command.Parameters.Add(DbProvider.CreateParameter(
+    "@Laudo_medico",
+    // Usamos 'as object' para garantir que DBNull.Value seja aceito se o Conteudo for nulo.
+    entity.LaudoMedico?.Conteudo as object ?? DBNull.Value,
+    DbType.Binary,
+    _databaseType
+));
+
             command.Parameters.Add(DbProvider.CreateParameter("@Observacoes_restricoes", (object)entity.ObservacoesRestricoes ?? DBNull.Value, DbType.String, _databaseType));
             command.Parameters.Add(DbProvider.CreateParameter("@Id", entity.Id, DbType.Int32, _databaseType));
             int rowsAffected = await command.ExecuteNonQueryAsync();
@@ -135,16 +154,20 @@ public class MatriculaRepository : BaseRepository<Matricula>, IMatriculaReposito
         try
         {
             await using var connection = await GetOpenConnectionAsync();
-            string query = $"SELECT * FROM {TableName} WHERE data_fim >{(_databaseType == DatabaseType.SqlServer ? "GETDATE()" :
-"CURRENT_DATE()")} {(idAluno > 0 ? "AND aluno_id = @id" : "")} ";
+
+            // A query original utiliza @id se idAluno > 0.
+            string query = $"SELECT * FROM {TableName} WHERE data_fim > {(_databaseType == DatabaseType.SqlServer ? "GETDATE()" : "CURRENT_DATE()")} {(idAluno > 0 ? "AND aluno_id = @id" : "")} ";
 
             await using var command = DbProvider.CreateCommand(query, connection);
 
-            // Adiciona o parâmetro com a data atual
-            var param = command.CreateParameter();
-            param.ParameterName = "@Hoje";
-            param.Value = DateTime.Today;
-            command.Parameters.Add(param);
+            // CORREÇÃO: Adiciona o parâmetro @id SOMENTE se houver um idAluno
+            if (idAluno > 0)
+            {
+                // Mantenho o nome do parâmetro @id para não quebrar sua query
+                command.Parameters.Add(DbProvider.CreateParameter("@id", idAluno, DbType.Int32, _databaseType));
+            }
+
+            // REMOVIDO: O código que adicionava o parâmetro @Hoje, pois ele não é usado na query.
 
             using var reader = await command.ExecuteReaderAsync();
 
@@ -171,7 +194,10 @@ public class MatriculaRepository : BaseRepository<Matricula>, IMatriculaReposito
             await using var connection = await GetOpenConnectionAsync();
             string query = $"SELECT * FROM {TableName} WHERE aluno_id = @Aluno";
             await using var command = DbProvider.CreateCommand(query, connection);
-            command.Parameters.Add(DbProvider.CreateParameter("@Aluno", alunoId, DbType.String, _databaseType));
+
+            // Correção de DbType para Int32 em IDs
+            command.Parameters.Add(DbProvider.CreateParameter("@Aluno", alunoId, DbType.Int32, _databaseType));
+
             using var reader = await command.ExecuteReaderAsync();
             var resultados = new List<Matricula>();
             while (await reader.ReadAsync())

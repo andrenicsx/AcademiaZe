@@ -151,7 +151,11 @@ namespace AcademiaDoZe.Presentation.AppMaui.ViewModels
 
                 var cpfNormalized = new string(Colaborador.Cpf.Where(char.IsDigit).ToArray());
 
-                var resultados = (await _colaboradorService.ObterPorCpfAsync(cpfNormalized))?.ToList() ?? new List<ColaboradorDTO>();
+                var colaborador = await _colaboradorService.ObterPorCpfAsync(cpfNormalized);
+                var resultados = colaborador != null
+                    ? new List<ColaboradorDTO> { colaborador }
+                    : new List<ColaboradorDTO>();
+
                 if (!resultados.Any())
                 {
                     await Shell.Current.DisplayAlert("Aviso", "CPF não encontrado.", "OK"); return;

@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="AcademiaDoZe.Presentation.AppMaui.Views.MatriculaPage"
+             xmlns:viewmodels="clr-namespace:AcademiaDoZe.Presentation.AppMaui.ViewModels;assembly=AcademiaDoZe.Presentation.AppMaui"
+             xmlns:converters="clr-namespace:AcademiaDoZe.Presentation.AppMaui.Converters"
+             xmlns:enums="clr-namespace:AcademiaDoZe.Application.Enums;assembly=AcademiaDoZe.Application" 
+             x:DataType="viewmodels:MatriculaViewModel"
+             Title="{Binding Title}">
+
+    <ContentPage.Resources>
+        <converters:DateOnlyToDateTimeConverter x:Key="DateOnlyToDateTimeConverter" />
+        <converters:EnumDisplayConverter x:Key="EnumDisplayConverter" />
+
+        <!-- 
+		  *** MUDANÇA 1: ADICIONADO O CONVERSOR DE FOTO ***
+		  (Assumindo que o nome do arquivo é 'FotoToImageSourceConverter.cs')
+		-->
+        <converters:FotoToImageSourceConverter x:Key="FotoToImageSourceConverter" />
+
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <StackLayout Spacing="20">
+
+            <!-- Card 1: Buscar Aluno (Sem mudanças) -->
+            <Border Style="{StaticResource CardBorder}" Margin="15,10">
+                <StackLayout Spacing="5">
+                    <Label Text="CPF do Aluno"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Entry Grid.Column="0" Text="{Binding CpfBusca}" Placeholder="000.000.000-00" Keyboard="Numeric" Margin="0,0,10,0"/>
+                        <Button Grid.Column="1" Text="" Command="{Binding SearchAlunoByCpfCommand}" Style="{StaticResource ButtonPrimary}" HeightRequest="40" Padding="15,0">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="MaterialIcons" Glyph="&#xe8b6;" />
+                            </Button.ImageSource>
+                        </Button>
+                    </Grid>
+                </StackLayout>
+            </Border>
+
+            <!-- 
+			  *** MUDANÇA 2: CARD DO ALUNO ATUALIZADO COM FOTO ***
+			-->
+            <Border Style="{StaticResource CardBorder}" Margin="15,10">
+                <StackLayout Spacing="10">
+                    <Label Text="Aluno Selecionado" Style="{StaticResource SubHeadline}"/>
+
+                    <!-- Usamos um Border para o fundo escuro do card -->
+                    <Border Margin="0,5,0,0" Padding="10" BackgroundColor="{AppThemeBinding Light={StaticResource Secondary}, Dark={StaticResource Gray900}}">
+
+                        <!-- 
+						  Layout em Grid: 
+						  Coluna 0 (Auto) = Foto
+						  Coluna 1 (*)   = Textos (Nome, CPF, Data)
+						-->
+                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="15" VerticalOptions="Center">
+
+                            <!-- Coluna 0: Foto Circular -->
+                            <!-- Usamos um Border com StrokeShape="Ellipse" para fazer a foto ficar redonda -->
+                            <Border Grid.Column="0"
+									StrokeShape="Ellipse"
+									HeightRequest="80"
+									WidthRequest="80"
+									VerticalOptions="Center"
+									HorizontalOptions="Center">
+                                <Image Aspect="AspectFill"
+									   Source="{Binding Matricula.AlunoMatricula.Foto, Converter={StaticResource FotoToImageSourceConverter}}" />
+                            </Border>
+
+                            <!-- Coluna 1: Textos -->
+                            <StackLayout Grid.Column="1" VerticalOptions="Center" Spacing="5">
+                                <Label Text="{Binding Matricula.AlunoMatricula.Nome}"
+									   FontAttributes="Bold"
+									   FontSize="18"/>
+                                <Label Text="{Binding Matricula.AlunoMatricula.Cpf}"
+									   FontSize="14"/>
+                                <Label Text="{Binding Matricula.AlunoMatricula.DataNascimento, StringFormat='Nascimento: {0:dd/MM/yyyy}'}"
+									   FontSize="14"/>
+                            </StackLayout>
+
+                        </Grid>
+                    </Border>
+                </StackLayout>
+            </Border>
+            <!-- *** FIM DA MUDANÇA 2 *** -->
+
+
+            <!-- Card 3: Detalhes da Matrícula (Sem mudanças) -->
+            <Border Style="{StaticResource CardBorder}" Margin="15,10">
+                <StackLayout Spacing="15">
+                    <Label Text="Detalhes da Matrícula" Style="{StaticResource SubHeadline}"/>
+
+                    <StackLayout Spacing="5">
+                        <Label Text="Plano"/>
+                        <Picker ItemsSource="{Binding PlanosOpcoes}"
+                                SelectedItem="{Binding Matricula.Plano}"
+                                ItemDisplayBinding="{Binding ., Converter={StaticResource EnumDisplayConverter}}"
+                                Title="Selecione o plano"/>
+                    </StackLayout>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <StackLayout Grid.Column="0" Spacing="5">
+                            <Label Text="Data de Início"/>
+                            <DatePicker Date="{Binding Matricula.DataInicio, Converter={StaticResource DateOnlyToDateTimeConverter}, Mode=TwoWay}"/>
+                        </StackLayout>
+                        <StackLayout Grid.Column="1" Spacing="5">
+                            <Label Text="Data Final"/>
+                            <DatePicker Date="{Binding Matricula.DataFim, Converter={StaticResource DateOnlyToDateTimeConverter}, Mode=TwoWay}"/>
+                        </StackLayout>
+                    </Grid>
+
+                    <StackLayout Spacing="5">
+                        <Label Text="Objetivo"/>
+                        <Editor Text="{Binding Matricula.Objetivo}" Placeholder="Ex: Hipertrofia, Perda de peso..." HeightRequest="100" AutoSize="Disabled"/>
+                    </StackLayout>
+
+                </StackLayout>
+            </Border>
+
+            <!-- Card 4: Saúde e Restrições (Sem mudanças) -->
+            <Border Style="{StaticResource CardBorder}" Margin="15,10">
+                <StackLayout Spacing="15">
+                    <Label Text="Saúde e Restrições" Style="{StaticResource SubHeadline}"/>
+                    <StackLayout Spacing="5">
+                        <Label Text="Restrições de Saúde (Marque todas que se aplicam)"/>
+
+                        <CollectionView ItemsSource="{Binding RestricoesOpcoes}" SelectionMode="None">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="auto,*" Padding="0,5">
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsChecked}"/>
+                                        <Label Grid.Column="1" Text="{Binding Nome}" VerticalOptions="Center" TextColor="White"/>
+                                        
+                                    </Grid>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+
+                    </StackLayout>
+
+                    <StackLayout Spacing="5">
+                        <Label Text="Observações sobre as Restrições"/>
+                        <Editor Text="{Binding Matricula.ObservacoesRestricoes}" Placeholder="Ex: Tomo remédio X, não posso fazer exercício Y..." HeightRequest="100" AutoSize="Disabled"/>
+                    </StackLayout>
+
+                    <StackLayout Spacing="5">
+                        <Label Text="Laudo Médico (Obrigatório para 12-16 anos ou com restrições)"/>
+                        <Button Text="{Binding TextoBotaoLaudo}" Command="{Binding SelecionarLaudoCommand}" Style="{StaticResource ButtonPrimary}" >
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="MaterialIcons" Glyph="&#xe226;" />
+                            </Button.ImageSource>
+                        </Button>
+                    </StackLayout>
+
+                </StackLayout>
+            </Border>
+
+            <!-- Botões Salvar/Cancelar (Sem mudanças) -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="15,10">
+                <Button Grid.Column="0" Text="Cancelar" Command="{Binding CancelCommand}" Style="{StaticResource ButtonSecondary}" HeightRequest="50">
+                    <Button.ImageSource>
+                        <FontImageSource FontFamily="MaterialIcons" Glyph="&#xe5c9;" />
+                    </Button.ImageSource>
+                </Button>
+                <Button Grid.Column="1" Text="Salvar" Command="{Binding SaveMatriculaCommand}" Style="{StaticResource ButtonPrimary}" HeightRequest="50">
+                    <Button.ImageSource>
+                        <FontImageSource FontFamily="MaterialIcons" Glyph="&#xe161;" />
+                    </Button.ImageSource>
+                </Button>
+            </Grid>
+
+            <ActivityIndicator IsVisible="{Binding IsBusy}" IsRunning="{Binding IsBusy}" VerticalOptions="Center" HorizontalOptions="Center"/>
+
+        </StackLayout>
+    </ScrollView>
+</ContentPage>

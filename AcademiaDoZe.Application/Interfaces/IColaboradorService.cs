@@ -1,16 +1,20 @@
 ﻿// André Nícolas Granemann Coelho
 using AcademiaDoZe.Application.DTOs;
 
-namespace AcademiaDoZe.Application.Interfaces;
-
-public interface IColaboradorService
+namespace AcademiaDoZe.Application.Interfaces
 {
-    Task<ColaboradorDTO> ObterPorIdAsync(int id);
-    Task<IEnumerable<ColaboradorDTO>> ObterTodosAsync();
-    Task<ColaboradorDTO> AdicionarAsync(ColaboradorDTO colaboradorDto);
-    Task<ColaboradorDTO> AtualizarAsync(ColaboradorDTO colaboradorDto);
-    Task<bool> RemoverAsync(int id);
-    Task<IEnumerable<ColaboradorDTO>> ObterPorCpfAsync(string cpf);
-    Task<bool> CpfJaExisteAsync(string cpf, int? id = null);
-    Task<bool> TrocarSenhaAsync(int id, string novaSenha);
+    public interface IColaboradorService
+    {
+        Task<ColaboradorDTO> ObterPorIdAsync(int id);
+        Task<IEnumerable<ColaboradorDTO>> ObterTodosAsync();
+        Task<ColaboradorDTO> AdicionarAsync(ColaboradorDTO colaboradorDto);
+        Task<ColaboradorDTO> AtualizarAsync(ColaboradorDTO colaboradorDto);
+        Task<bool> RemoverAsync(int id);
+
+        // AJUSTADO — retorna apenas 1 colaborador por CPF
+        Task<ColaboradorDTO?> ObterPorCpfAsync(string cpf);
+
+        Task<bool> CpfJaExisteAsync(string cpf, int? id = null);
+        Task<bool> TrocarSenhaAsync(int id, string novaSenha);
+    }
 }

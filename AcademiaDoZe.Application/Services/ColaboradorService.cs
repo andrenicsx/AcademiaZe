@@ -5,117 +5,98 @@ using AcademiaDoZe.Application.Interfaces;
 using AcademiaDoZe.Application.Mappings;
 using AcademiaDoZe.Domain.Repositories;
 using AcademiaDoZe.Application.Security;
-namespace AcademiaDoZe.Application.Services;
 
-public class ColaboradorService : IColaboradorService
+namespace AcademiaDoZe.Application.Services
 {
-    private readonly Func<IColaboradorRepository> _repoFactory;
-    public ColaboradorService(Func<IColaboradorRepository> repoFactory)
+    public class ColaboradorService : IColaboradorService
     {
-        _repoFactory = repoFactory ?? throw new ArgumentNullException(nameof(repoFactory));
-    }
-    public async Task<ColaboradorDTO> AdicionarAsync(ColaboradorDTO colaboradorDto)
-    {
-        // Verifica se já existe um colaborador com o mesmo CPF
-        if (await _repoFactory().CpfJaExiste(colaboradorDto.Cpf))
+        private readonly Func<IColaboradorRepository> _repoFactory;
 
+        public ColaboradorService(Func<IColaboradorRepository> repoFactory)
         {
-            throw new InvalidOperationException($"Já existe um colaborador cadastrado com o CPF {colaboradorDto.Cpf}.");
+            _repoFactory = repoFactory ?? throw new ArgumentNullException(nameof(repoFactory));
         }
-        // Hash da senha
 
-        if (!string.IsNullOrWhiteSpace(colaboradorDto.Senha))
-
+        public async Task<ColaboradorDTO> AdicionarAsync(ColaboradorDTO colaboradorDto)
         {
-            colaboradorDto.Senha = PasswordHasher.Hash(colaboradorDto.Senha);
+            if (await _repoFactory().CpfJaExiste(colaboradorDto.Cpf))
+                throw new InvalidOperationException($"Já existe um colaborador cadastrado com o CPF {colaboradorDto.Cpf}.");
+
+            if (!string.IsNullOrWhiteSpace(colaboradorDto.Senha))
+                colaboradorDto.Senha = PasswordHasher.Hash(colaboradorDto.Senha);
+
+            var colaborador = colaboradorDto.ToEntity();
+
+            await _repoFactory().Adicionar(colaborador);
+
+            return colaborador.ToDto();
         }
-        // Cria a entidade de domínio a partir do DTO
-        var colaborador = colaboradorDto.ToEntity();
-        // Salva no repositório
-        await _repoFactory().Adicionar(colaborador);
-        // Retorna o DTO atualizado com o ID gerado
-        return colaborador.ToDto();
 
-    }
-    public async Task<ColaboradorDTO> AtualizarAsync(ColaboradorDTO colaboradorDto)
-    {
-        // Verifica se o colaborador existe
-
-        var colaboradorExistente = await _repoFactory().ObterPorId(colaboradorDto.Id) ?? throw new KeyNotFoundException($"Colaborador ID {colaboradorDto.Id} não encontrado.");
-
-        // Verifica se o novo CPF já está em uso por outro colaborador
-
-        if (await _repoFactory().CpfJaExiste(colaboradorDto.Cpf, colaboradorDto.Id))
-
+        public async Task<ColaboradorDTO> AtualizarAsync(ColaboradorDTO colaboradorDto)
         {
-            throw new InvalidOperationException($"Já existe outro colaborador cadastrado com o CPF {colaboradorDto.Cpf}.");
+            var colaboradorExistente = await _repoFactory().ObterPorId(colaboradorDto.Id)
+                ?? throw new KeyNotFoundException($"Colaborador ID {colaboradorDto.Id} não encontrado.");
+
+            if (await _repoFactory().CpfJaExiste(colaboradorDto.Cpf, colaboradorDto.Id))
+                throw new InvalidOperationException($"Já existe outro colaborador cadastrado com o CPF {colaboradorDto.Cpf}.");
+
+            if (!string.IsNullOrWhiteSpace(colaboradorDto.Senha))
+                colaboradorDto.Senha = PasswordHasher.Hash(colaboradorDto.Senha);
+
+            var colaboradorAtualizado = colaboradorExistente.UpdateFromDto(colaboradorDto);
+
+            await _repoFactory().Atualizar(colaboradorAtualizado);
+
+            return colaboradorAtualizado.ToDto();
         }
-        // Se nova senha informada, aplicar hash
 
-        if (!string.IsNullOrWhiteSpace(colaboradorDto.Senha))
-
+        public async Task<ColaboradorDTO> ObterPorIdAsync(int id)
         {
-            colaboradorDto.Senha = PasswordHasher.Hash(colaboradorDto.Senha);
+            var colaborador = await _repoFactory().ObterPorId(id);
+            return colaborador?.ToDto()!;
         }
-        // a partir dos dados do dto e do existente, cria uma nova instância com os valores atualizados
 
-        var colaboradorAtualizado = colaboradorExistente.UpdateFromDto(colaboradorDto);
-        // Atualiza no repositório
-        await _repoFactory().Atualizar(colaboradorAtualizado);
-        return colaboradorAtualizado.ToDto();
-
-    }
-    public async Task<ColaboradorDTO> ObterPorIdAsync(int id)
-    {
-        var colaborador = await _repoFactory().ObterPorId(id);
-        return (colaborador != null) ? colaborador.ToDto() : null!;
-
-    }
-    public async Task<IEnumerable<ColaboradorDTO>> ObterTodosAsync()
-    {
-        var colaboradores = await _repoFactory().ObterTodos();
-        return [.. colaboradores.Select(c => c.ToDto())];
-
-    }
-    public async Task<bool> RemoverAsync(int id)
-    {
-        var colaborador = await _repoFactory().ObterPorId(id);
-
-        if (colaborador == null)
-
+        public async Task<IEnumerable<ColaboradorDTO>> ObterTodosAsync()
         {
-            return false;
+            var colaboradores = await _repoFactory().ObterTodos();
+            return colaboradores.Select(c => c.ToDto());
         }
-        await _repoFactory().Remover(id);
 
-        return true;
+        public async Task<bool> RemoverAsync(int id)
+        {
+            var colaborador = await _repoFactory().ObterPorId(id);
 
-    }
-    public async Task<IEnumerable<ColaboradorDTO>> ObterPorCpfAsync(string cpf)
-    {
-        if (string.IsNullOrWhiteSpace(cpf))
-            throw new ArgumentException("CPF não pode ser vazio.", nameof(cpf));
-        // mantém apenas dígitos - normaliza
-        cpf = new string(cpf.Where(char.IsDigit).ToArray());
-        // busca no repositório (já faz LIKE por prefixo)
+            if (colaborador == null)
+                return false;
 
-        var colaboradores = await _repoFactory().ObterPorCpf(cpf) ?? Enumerable.Empty<Domain.Entities.Colaborador>();
+            await _repoFactory().Remover(id);
+            return true;
+        }
 
-        // mapeia para DTOs e retorna
+        public async Task<ColaboradorDTO?> ObterPorCpfAsync(string cpf)
+        {
+            if (string.IsNullOrWhiteSpace(cpf))
+                throw new ArgumentException("CPF não pode ser vazio.", nameof(cpf));
 
-        return colaboradores.Select(c => c.ToDto());
-    }
+            cpf = new string(cpf.Where(char.IsDigit).ToArray());
 
-    public async Task<bool> CpfJaExisteAsync(string cpf, int? id = null)
-    {
-        return await _repoFactory().CpfJaExiste(cpf, id);
-    }
-    public async Task<bool> TrocarSenhaAsync(int id, string novaSenha)
-    {
-        if (string.IsNullOrWhiteSpace(novaSenha))
-            throw new ArgumentException("Nova senha inválida.", nameof(novaSenha));
-        var hash = PasswordHasher.Hash(novaSenha);
-        return await _repoFactory().TrocarSenha(id, hash);
+            var colaborador = await _repoFactory().ObterPorCpf(cpf);
 
+            return colaborador?.ToDto();
+        }
+
+        public async Task<bool> CpfJaExisteAsync(string cpf, int? id = null)
+        {
+            return await _repoFactory().CpfJaExiste(cpf, id);
+        }
+
+        public async Task<bool> TrocarSenhaAsync(int id, string novaSenha)
+        {
+            if (string.IsNullOrWhiteSpace(novaSenha))
+                throw new ArgumentException("Nova senha inválida.", nameof(novaSenha));
+
+            var hash = PasswordHasher.Hash(novaSenha);
+            return await _repoFactory().TrocarSenha(id, hash);
+        }
     }
 }

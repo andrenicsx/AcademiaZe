@@ -84,31 +84,33 @@ public class ColaboradorRepository : BaseRepository<Colaborador>, IColaboradorRe
         }
         catch (DbException ex) { throw new InvalidOperationException($"Erro ao adicionar colaborador: {ex.Message}", ex); }
     }
-    public async Task<IEnumerable<Colaborador>> ObterPorCpf(string cpfPrefix)
+    public async Task<Colaborador?> ObterPorCpf(string cpf)
     {
         try
         {
             await using var connection = await GetOpenConnectionAsync();
-            string query = $"SELECT * FROM {TableName} WHERE cpf LIKE @CpfPrefix";
+            string query = $"SELECT * FROM {TableName} WHERE cpf = @Cpf LIMIT 1";
+
             await using var command = DbProvider.CreateCommand(query, connection);
-            // parâmetro com sufixo '%' para buscar por prefixo
+            command.Parameters.Add(DbProvider.CreateParameter("@Cpf", cpf, DbType.String, _databaseType));
 
-            var parameterValue = (cpfPrefix ?? string.Empty).Trim() + "%";
-
-            command.Parameters.Add(DbProvider.CreateParameter("@CpfPrefix", parameterValue, DbType.String, _databaseType));
             await using var reader = await command.ExecuteReaderAsync();
-            var colaboradores = new List<Colaborador>();
-            while (await reader.ReadAsync())
+
+            if (await reader.ReadAsync())
             {
-                colaboradores.Add(await MapAsync(reader));
+                return await MapAsync(reader);
             }
-            return colaboradores;
+
+            return null;
         }
         catch (DbException ex)
         {
-            throw new InvalidOperationException($"Erro ao obter colaborador(s) pelo CPF '{cpfPrefix}': {ex.Message}", ex);
+            throw new InvalidOperationException(
+                $"Erro ao obter colaborador pelo CPF '{cpf}': {ex.Message}", ex
+            );
         }
     }
+
 
     public override async Task<Colaborador> Atualizar(Colaborador entity)
     {

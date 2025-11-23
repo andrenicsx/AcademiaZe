@@ -102,14 +102,15 @@ namespace AcademiaDoZe.Presentation.AppMaui.ViewModels
 
                         resultados = new[] { colaborador };
                 }
-                else if (SelectedFilterType == "CPF")
+                else if (SelectedFilterType == "Id" && int.TryParse(SearchText, out int parsedId))
                 {
-                    // ObterPorCpfAsync agora retorna IEnumerable<ColaboradorDTO>
-
-                    var colaboradores = await _colaboradorService.ObterPorCpfAsync(SearchText) ?? Enumerable.Empty<ColaboradorDTO>();
-
-                    resultados = colaboradores;
+                    var colaborador = await _colaboradorService.ObterPorIdAsync(parsedId);
+                    resultados = colaborador != null
+                        ? new List<ColaboradorDTO> { colaborador }
+                        : Enumerable.Empty<ColaboradorDTO>();
                 }
+
+
                 // Atualiza a coleção na thread principal
 
                 await MainThread.InvokeOnMainThreadAsync(() =>

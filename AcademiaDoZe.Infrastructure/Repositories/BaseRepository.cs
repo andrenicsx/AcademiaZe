@@ -64,7 +64,10 @@ public abstract class BaseRepository<TEntity> : IRepository<TEntity>, IAsyncDisp
     #region métodos de uso geral, não dependem de dados específicos de cada entidade
     public virtual async Task<TEntity?> ObterPorId(int id)
     {
-        if (id <= 0) { throw new ArgumentException("ID_NAO_INFORMADO_MENOR_UM", nameof(id)); }
+        // CORRIGIDO: Removida a validação 'if (id <= 0)' para permitir checagem de novas entidades (ID=0)
+
+        // if (id <= 0) { throw new ArgumentException("ID_NAO_INFORMADO_MENOR_UM", nameof(id)); } // LINHA REMOVIDA/COMENTADA
+
         try
         {
             await using var connection = await GetOpenConnectionAsync();
@@ -116,5 +119,5 @@ public abstract class BaseRepository<TEntity> : IRepository<TEntity>, IAsyncDisp
     public abstract Task<TEntity> Adicionar(TEntity entity);
     public abstract Task<TEntity> Atualizar(TEntity entity);
     protected abstract Task<TEntity> MapAsync(DbDataReader reader);
-    #endregion#region métodos de uso geral, não dependem de dados específicos de cada entidade
+    #endregion
 }
